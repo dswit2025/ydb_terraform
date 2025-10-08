@@ -1,0 +1,83 @@
+---
+# Добавления:
+# - Удалить старый default symlink (если есть).
+# - Добавить hosts в /etc/hosts для web группы (чтобы web1 резолвился).
+# - Оставить остальное как в предыдущем.
+
+- name: Gather facts explicitly
+  setup:
+  when: inventory_hostname in groups.get('proxy', [])
+
+- name: Debug vars
+  debug:
+    msg: "ansible_group_names: {{ ansible_group_names | default('Undefined') }}"
+  when: inventory_hostname in groups.get('proxy', [])
+
+- name: Debug groups
+  debug:
+    msg: "Groups: {{ groups }}"
+  when: inventory_hostname in groups.get('proxy', [])
+
+- name: Debug web group
+  debug:
+    msg: "Web group: {{ groups['web'] | default('Not found') }}"
+  when: inventory_hostname in groups.get('proxy', [])
+
+- name: Обновить кэш пакетов
+  shell: apt-get update
+  become: true
+  when: inventory_hostname in groups.get('proxy', [])
+
+- name: Установить Nginx
+  package:
+    name: nginx
+    state: present
+  become: yes
+  when: inventory_hostname in groups.get('proxy', [])
+
+- name: Добавить web хосты в /etc/hosts
+  lineinfile:
+    path: /etc/hosts
+    line: "{{ hostvars[item]['ansible_host'] | default(hostvars[item]['ansible_default_ipv4']['address'] if hostvars[item]['ansible_default_ipv4'] is defined else item) }} {{ item }}"
+    state: present
+  loop: "{{ groups['web'] | default([]) }}"
+  become: yes
+  when: inventory_hostname in groups.get('proxy', [])
+
+- name: Удалить старый default symlink (если есть)
+  file:
+    path: /etc/nginx/sites-enabled/default
+    state: absent
+  become: yes
+  when: inventory_hostname in groups.get('proxy', [])
+
+- name: Скопировать конфиг прокси
+  template:
+    src: nginx_proxy.conf.j2
+    dest: /etc/nginx/sites-available/proxy
+  become: yes
+  when: inventory_hostname in groups.get('proxy', [])
+
+- name: Включить конфиг proxy
+  file:
+    src: /etc/nginx/sites-available/proxy
+    dest: /etc/nginx/sites-enabled/proxy
+    state: link
+  become: yes
+  notify: restart nginx
+  when: inventory_hostname in groups.get('proxy', [])
+
+- name: Проверить синтаксис Nginx
+  command: nginx -t
+  become: yes
+  register: nginx_test
+  failed_when: nginx_test.rc != 0
+  when: inventory_hostname in groups.get('proxy', [])
+
+- name: Включить Nginx
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+  become: yes
+  when: inventory_hostname in groups.get('proxy', [])

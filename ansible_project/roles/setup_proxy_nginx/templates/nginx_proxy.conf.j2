@@ -1,0 +1,15 @@
+
+upstream web {
+    {% for item in groups['web'] | default([]) %}
+    server {{ hostvars[item]['ansible_host'] | default(hostvars[item]['ansible_default_ipv4']['address'] if hostvars[item]['ansible_default_ipv4'] is defined else item) }}:80;
+    {% endfor %}
+}
+
+server {
+    listen 3000;
+    location / {
+        proxy_pass http://web;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+    }
+}

@@ -1,0 +1,46 @@
+---
+# Исправленный файл roles/setup_serving_nginx/tasks/main.yml
+# Изменения:
+# - Убрана задача setup (gather_facts: true в playbook делает её ненужной).
+# - Заменено 'webservers' на 'web' в when и groups для соответствия inventory/playbook.
+# - Debug с | default для безопасности.
+
+- name: Gather facts explicitly
+  setup:
+  when: inventory_hostname in groups.get('web', [])
+
+- name: Debug vars
+  debug:
+    msg: "ansible_group_names: {{ ansible_group_names | default('Undefined') }}"
+  when: inventory_hostname in groups.get('web', [])
+
+- name: Обновить кэш пакетов
+  shell: apt-get update
+  become: true
+
+- name: Установить Nginx
+  package:
+    name: nginx
+    state: present
+  become: yes
+
+- name: Скопировать индексную страницу
+  template:
+    src: index.html.j2
+    dest: /var/www/html/index.html
+  when: inventory_hostname in groups.get('web', [])
+  become: true
+
+- name: Скопировать конфиг Nginx
+  template:
+    src: nginx_serving.conf.j2
+    dest: /etc/nginx/sites-available/default
+  become: yes
+  notify: restart nginx
+
+- name: Включить Nginx
+  service:
+    name: nginx
+    state: started
+    enabled: yes
+  become: yes

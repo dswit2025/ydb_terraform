@@ -1,0 +1,27 @@
+---
+- name: Изменить hostname
+  ansible.builtin.hostname:
+    name: "{{ new_hostname }}"
+  become: true
+  when: inventory_hostname in groups.get('vm', []) and new_hostname is defined
+
+- name: Обновить кэш пакетов
+  ansible.builtin.apt:
+    update_cache: yes
+    cache_valid_time: 3600  # Обновлять не чаще раза в час
+  become: true
+  when: inventory_hostname in groups.get('vm', [])
+
+- name: Установить стандартные пакеты
+  ansible.builtin.package:
+    name: "{{ item }}"
+    state: present
+  loop:
+    - net-tools
+    - dnsutils
+    - wget
+    - curl
+    - mc
+    - rsync
+  become: true
+  when: inventory_hostname in groups.get('vm', [])

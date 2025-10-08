@@ -1,0 +1,10 @@
+<html>
+<head>
+    <title>Hello Page</title>
+</head>
+<body>
+    <h1>Hello from {{ ansible_hostname | default('Unknown Host') }}!</h1>
+    <p>Machine name: {{ ansible_hostname | default('Unknown Host') }}</p>
+    <p>Group: {{ ansible_group_names | default(['No Groups']) }}</p>
+</body>
+</html>

@@ -1,0 +1,25 @@
+---
+- name: Настройка ВМ
+  hosts: vm
+  gather_facts: true
+  roles:
+    - setup_vm
+
+- name: Настройка отдающего Nginx
+  hosts: web
+  gather_facts: true
+  pre_tasks:
+    - name: Debug facts
+      debug:
+        msg: "{{ ansible_facts }}"
+    - name: Debug facts before roles
+      debug:
+        msg: "ansible_group_names: {{ ansible_group_names | default('Undefined') }}"
+  roles:
+    - setup_serving_nginx
+
+- name: Настройка проксирующего Nginx
+  hosts: proxy
+  gather_facts: true
+  roles:
+    - setup_proxy_nginx
