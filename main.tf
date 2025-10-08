@@ -12,8 +12,8 @@ resource "yandex_compute_instance" "vm" {
 
   boot_disk {
     initialize_params {
-      image_id = "fd8vmcue7aajpmeo39ql"  # ID образа Ubuntu 20.04
-      size     = 20
+      image_id = "fd801iv1gjj2mbvjolim"  # ID образа Ubuntu 20.04
+      size     = 60
     }
   }
 
@@ -29,12 +29,12 @@ resource "yandex_compute_instance" "vm" {
 
 # Сеть и подсеть
 resource "yandex_vpc_network" "network" {
-  name = "my-network"
+  name = "my-net"
 }
 
 resource "yandex_vpc_subnet" "subnet" {
-  name           = "my-subnet"
+  name           = "subnet-1a"
   zone           = var.zone
   network_id     = yandex_vpc_network.network.id
-  v4_cidr_blocks = ["192.168.10.0/24"]
+  v4_cidr_blocks = ["192.168.192.0/24"]
 }
